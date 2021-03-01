@@ -1,0 +1,13 @@
+let
+    Source = Excel.Workbook(File.Contents("V:\001-FMA\000-SoF\11-DataModel\00-InputFiles\AROWS-AnnualTour.xlsx"), null, true),
+    annualTour1 = Source{[Name="annualTour"]}[Data],
+    #"Removed Top 2 Rows" = Table.Skip(annualTour1,2),
+    #"Promoted Headers" = Table.PromoteHeaders(#"Removed Top 2 Rows", [PromoteAllScalars=true]),
+    #"Remove FOUO stmt" = Table.SelectRows(#"Promoted Headers", each ([#" Owning OWA"] <> "The information herein is FOR OFFICIAL USE ONLY (FOUO) information which must be protected under the Freedom of Information Act (5 U.S.C. 552) and/or the Privacy Act of 1974 (5 U.S.C. 552a). Unauthorized disclosure or misuse of this PERSONAL INFORMATION m")),
+    #"Removed Columns" = Table.RemoveColumns(#"Remove FOUO stmt",{"SSN", "MajCom ID", "Rental Car Authorized"}),
+    #"Capitalized Each Word" = Table.TransformColumns(#"Removed Columns",{{" Name", Text.Proper, type text}}),
+    #"Renamed Columns" = Table.RenameColumns(#"Capitalized Each Word",{{" Owning OWA", "Organization"}, {"AT Days Performed in FY", "AT MilPay Days"}, {"AT Travel Days in FY", "AT Travel Days"}}),
+    #"Changed Type" = Table.TransformColumnTypes(#"Renamed Columns",{{"AT MilPay Days", Int64.Type}, {"AT Travel Days", Int64.Type}}),
+    #"Replaced Null Values to Zero" = Table.ReplaceValue(#"Changed Type",null,0,Replacer.ReplaceValue,{"AT MilPay Days", "AT Travel Days"})
+in
+    #"Replaced Null Values to Zero"
